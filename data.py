@@ -9,7 +9,7 @@ COURSE_URI = (
     "http://mathhub.info"
     "?a=courses/FAU/AI/course"
     "&p=course/notes&d=notes1&l=en"
-)
+) 
 
 def fetch_toc(uri: str):
     """Fetch the table-of-contents structure (fragment URIs in order)."""
@@ -31,7 +31,7 @@ def fetch_fragment(uri, context_uri):
     resp.raise_for_status()
     return resp.json()
 
-def extract_html_titles(node, results, files, context):
+def extract_html_titles(node, results, files, uri_content_list, context):
     """Recursively extract all `title` fields containing HTML tags."""
     if isinstance(node, dict):
         next_context = None
@@ -44,20 +44,24 @@ def extract_html_titles(node, results, files, context):
         #     # Check if it contains HTML (very simple tag check)
         #     if isinstance(title, str) and re.search(r"<[^>]+>", title):
         #         results.append(title.strip())
-        if uri is not None:
+        if "uri" in node:
             print("rere")
             frag = fetch_fragment(node['uri'], context)
             results.append(frag[2])
+            uri_content_list.append({
+                "uri": node['uri'],
+                "content": frag[2]
+            })
             for link in frag[1]:
                 files.add(link['Link'])
 
         # Recurse into children
         for key, value in node.items():
-            extract_html_titles(value, results, files, next_context)
+            extract_html_titles(value, results, files, uri_content_list, next_context)
 
     elif isinstance(node, list):
         for item in node:
-            extract_html_titles(item, results,files, context)
+            extract_html_titles(item, results, files, uri_content_list, context)
 
 def main():
     files = set()
@@ -65,7 +69,8 @@ def main():
     toc_html = fetch_toc(COURSE_URI)
 
     titles_with_html = []
-    extract_html_titles(toc_html, titles_with_html, files, COURSE_URI)
+    uri_content_list = []
+    extract_html_titles(toc_html, titles_with_html, files, uri_content_list, COURSE_URI)
 
 
     # -----------------------------
@@ -106,6 +111,7 @@ def main():
       </body></html>
     """
     print(files)
+    print(uri_content_list)
     
 
     with open("course_full.ftml", "w", encoding="utf-8") as f:
