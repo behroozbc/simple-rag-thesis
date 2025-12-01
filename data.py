@@ -45,7 +45,6 @@ def extract_html_titles(node, results, files, uri_content_list, context):
         #     if isinstance(title, str) and re.search(r"<[^>]+>", title):
         #         results.append(title.strip())
         if "uri" in node:
-            print("rere")
             frag = fetch_fragment(node['uri'], context)
             results.append(frag[2])
             uri_content_list.append({
