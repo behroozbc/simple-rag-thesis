@@ -31,6 +31,8 @@ def search(query:str,/,num_results=20,allow_documents:bool=False,allow_paragraph
         data=data
     )
     return response.json()
-    
-for x in search("f"):
-    print(x[1])
+def main():
+    for x in search("f"):
+        print(x[1])
+if __name__ == "__main__":
+    main()
