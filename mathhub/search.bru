@@ -1,0 +1,28 @@
+meta {
+  name: search
+  type: http
+  seq: 1
+}
+
+post {
+  url: https://mathhub.info/api/search
+  body: formUrlEncoded
+  auth: inherit
+}
+
+body:json {
+  {
+    "query":"f"
+  }
+}
+
+body:form-urlencoded {
+  query: f
+  opts[allow_documents]: false
+  num_results: 50
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
