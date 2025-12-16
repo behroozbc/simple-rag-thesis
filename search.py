@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import json
 import requests
 
-from data import FLAMS_BASE
+from data import FLAMS_BASE, fetch_fragment
 
 @dataclass
 class SearchResult:
@@ -30,9 +30,25 @@ def search(query:str,/,num_results=20,allow_documents:bool=False,allow_paragraph
     FLAMS_BASE+"/api/search",
         data=data
     )
-    return response.json()
+    response=response.json()
+    uri_content_list=[]
+    for item in response:
+        item= item[1]
+        
+        uri= item.get("Document",None)
+        if uri ==None:
+            uri= item.get("Paragraph",None)
+            uri=uri["uri"]
+        if uri!=None:
+            content= fetch_fragment(uri)
+            uri_content_list.append({
+                "uri":uri,
+                "content":content[2]
+            })
+    return uri_content_list
 def main():
-    for x in search("f"):
-        print(x[1])
+    print( len( search("f")))
+    
+     
 if __name__ == "__main__":
     main()

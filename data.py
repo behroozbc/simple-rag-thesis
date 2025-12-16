@@ -20,7 +20,7 @@ def fetch_toc(uri: str):
     # The response is HTML — parse it to extract all fragment links in order
     return resp.json()
 
-def fetch_fragment(uri, context_uri):
+def fetch_fragment(uri, context_uri=None):
     """
     Parse the TOC HTML and extract the URIs of all content fragments in the order they appear.
     """
