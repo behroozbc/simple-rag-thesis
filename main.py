@@ -8,6 +8,7 @@ from langchain.agents.middleware import dynamic_prompt, ModelRequest
 from langchain.agents import create_agent
 from langchain_ollama import OllamaEmbeddings,ChatOllama
 from data import COURSE_URI, extract_html_titles, fetch_toc
+from search import TextSearch
 # Load environment variables from .env file
 load_dotenv()
 GETDATA=False
@@ -27,7 +28,6 @@ model = ChatOllama(
     temperature=0,
     # other params...
 )
-print(connection)
 vector_store = PGVector(
     embeddings=embeddings,
     collection_name=collection_name,
@@ -54,15 +54,21 @@ if GETDATA:
 def prompt_with_context(request: ModelRequest) -> str:
     """Inject context into state messages."""
     last_query = request.state["messages"][-1].text
+    text_searchResult= TextSearch(last_query,4)
     retrieved_docs = vector_store.similarity_search(last_query)
-
+    
     docs_content = "\n\n".join(doc.page_content for doc in retrieved_docs)
-    print(docs_content)
+    vector_uri_contnet = [doc.metadata["uri"] for doc in retrieved_docs]
+    print(vector_uri_contnet)
+    for doc in text_searchResult:
+        if doc['uri'] not in vector_uri_contnet:
+            docs_content+= "\n\n"+doc['content']
+            print(doc['uri'])
+     
     system_message = (
-        "You are a helpful assistant. Use the following context in your response:"
+        "Your response should mixed of this content:"
         f"\n\n{docs_content}"
     )
-
     return system_message
 
 agent = create_agent(model, tools=[], middleware=[prompt_with_context])

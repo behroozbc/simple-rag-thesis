@@ -1,7 +1,6 @@
 from typing import List
 from typing import Any
 from dataclasses import dataclass
-import json
 import requests
 
 from data import FLAMS_BASE, fetch_fragment
@@ -14,7 +13,7 @@ class SearchResult:
     def from_dict(obj: Any) -> 'SearchResult':
         _MyArray = [y.from_dict(y) for y in obj.get("MyArray")]
         return SearchResult(_MyArray)
-def search(query:str,/,num_results=20,allow_documents:bool=False,allow_paragraphs:bool=False,allow_definitions:bool=False,allow_examples:bool=False,allow_assertions:bool=False,allow_problems:bool=False,definition_like_only:bool=False):
+def TextSearch(query:str,/,num_results=20,allow_documents:bool=False,allow_paragraphs:bool=False,allow_definitions:bool=False,allow_examples:bool=False,allow_assertions:bool=False,allow_problems:bool=False,definition_like_only:bool=False):
     data={
         "query": query,
         "opts[allow_documents]": str(allow_documents).lower(),
@@ -47,7 +46,7 @@ def search(query:str,/,num_results=20,allow_documents:bool=False,allow_paragraph
             })
     return uri_content_list
 def main():
-    print( len( search("f")))
+    print( len( TextSearch("f")))
     
      
 if __name__ == "__main__":
