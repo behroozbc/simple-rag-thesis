@@ -38,9 +38,6 @@ def fetch_query_data():
         resp.raise_for_status()
 
         chunk = resp.json()["results"]["bindings"]
-        if len(all_edges) >= 50000:
-            print(f"[done] no more data at offset {offset}")
-            break
 
         if not chunk:
             print(f"[done] no more data at offset {offset}")
