@@ -4,18 +4,95 @@ from collections import defaultdict
 
 
 FLAMS_BASE = "https://mathhub.info"
-COURSE_URI = (
-    "http://mathhub.info"
-    "?a=courses/FAU/AI/course"
-    "&p=course/notes&d=notes1&l=en"
-) 
 
-def fetch_query_data():
-    """POST a SPARQL query to FLAMS and return JSON."""
-    url = f"{FLAMS_BASE}/api/backend/query"
+#############################################
+# Helper function to query the FLAMS SPARQL endpoint
+############################################
+def query_api(payload):
+    query_url = f"{FLAMS_BASE}/api/backend/query"
+    resp = requests.post(query_url, data=payload, headers={
+            "Accept": "application/json"
+        })
+    resp.raise_for_status()
+    return resp.json()["results"]["bindings"]
+
+
+#############################################
+# Fetch document uris of triggered query with ?s variable
+#############################################
+def fetch_doc_other_values(sparl_query):
     limit = 2000
     offset = 0
+    data = []
+    while True:
+        query = f"""
+        {sparl_query}
+        LIMIT {limit}
+        OFFSET {offset}
+        """
+        chunk = query_api(payload={"query": query})
+        if not chunk:
+            print(f"[done] no more data at offset {offset}")
+            break
+        for row in chunk:
+            value = row["s"]["value"]
+            data.append(value)
 
+        print(f"[+] fetched {len(chunk)} rows (total {len(data)})")
+        offset += limit
+
+    return data
+
+#############################################
+# Fetch document reference symbols
+#############################################
+def fetch_document_symbols(document):
+     query = f"""
+        SELECT DISTINCT ?s WHERE {{
+            <{document}> (ulo:contains|dc:hasPart)* ?p.
+            ?p ulo:crossrefs ?s.
+        }}
+        order by ?s
+        """
+     return fetch_doc_other_values(query)
+
+#############################################
+# Fetch document reference symbols
+#############################################
+def fetch_document_reference_symbols(document):
+     query = f"""
+        SELECT DISTINCT ?s WHERE {{
+            <{document}> (ulo:contains|dc:hasPart)* ?p.
+            ?p ulo:crossrefs ?s.
+        }}
+        order by ?s
+        """
+     return fetch_doc_other_values(query)
+
+#############################################
+# Fetch document prerequisites
+#############################################
+def fetch_document_prerequisites(document):
+     query = f"""
+        SELECT DISTINCT ?s WHERE {{
+            <{document}> (ulo:contains|dc:hasPart)* ?p.
+            ?p ulo:crossrefs ?s.
+            MINUS {{
+                <{document}> (ulo:contains|dc:hasPart)* ?p.
+                ?p ulo:defines ?s.
+                }}
+        }}
+        order by ?s
+        """
+     return fetch_doc_other_values(query)
+
+#############################################
+# Fetch all documentURI's data using SPARQL
+#############################################
+def fetch_all_data_from_query_api():
+    """POST a SPARQL query to FLAMS and return JSON."""
+    limit = 2000
+    offset = 0
     all_edges = []
 
     while True:
@@ -30,14 +107,7 @@ def fetch_query_data():
         LIMIT {limit}
         OFFSET {offset}
         """
-        payload = {"query": query}
-
-        resp = requests.post(url, data=payload, headers={
-            "Accept": "application/json"
-        })
-        resp.raise_for_status()
-
-        chunk = resp.json()["results"]["bindings"]
+        chunk = query_api(payload={"query": query})
 
         if not chunk:
             print(f"[done] no more data at offset {offset}")
@@ -89,18 +159,34 @@ def build_tree(node, children, visited):
     visited.add(node)
     
     # Fetch fragment for this node 
+    fragment = []
+    prerequisites = []
+    symbols = []
     try: 
         fragment = fetch_document(node) 
     except Exception as e: 
-        fragment = {"error": str(e)}
+        print(str(e))
+
+    try:
+        prerequisites= fetch_document_prerequisites(node)
+    except Exception as ex:
+        print(str(ex))
+
+    try:
+        symbols= fetch_document_symbols(node)
+    except Exception as ex:
+        print(str(ex))
 
     return {
-        "uri": node,
+        node:{
         "fragment": fragment,
+        "prerequisites": prerequisites,
+        "symbols": symbols,
         "children": [
             build_tree(child, children, visited.copy())
             for child in sorted(children.get(node, []))
         ]
+        }
     }
 
 
@@ -117,32 +203,22 @@ def print_tree(tree, indent=0, max_depth=10):
     for child in tree.get("children", []):
         print_tree(child, indent + 1, max_depth)
 
-
-def fetch_fragment(uri, context_uri=None):
-    """
-    HTML fragment representing the given element URI    
-    """
-    resp = requests.get(
-        f"{FLAMS_BASE}/content/fragment",
-        params={"uri": uri, "context": context_uri}
-    )
-    resp.raise_for_status()
-    return resp.json()
 def fetch_document(uri):
     """
-    HTML fragment representing the given element URI    
+    HTML fragment representing of the given element URI    
     """
     print(f"Fetching document for URI: {uri}")
     resp = requests.get(
-        f"{FLAMS_BASE}/content/document",
+        f"{FLAMS_BASE}/content/fragment",
         params={"uri": uri}
     )
     resp.raise_for_status()
     return resp.json()
 
 def main():
+    
     print("=== Fetching SPARQL edges ===")
-    edges = fetch_query_data()
+    edges = fetch_all_data_from_query_api()
     print(f"Total edges: {len(edges)}")
 
     print("=== Building graph ===")
@@ -165,16 +241,11 @@ def main():
         tree = build_tree(r, children, set())
         forest.append(tree)
 
-    print("=== Example printed tree (depth-limited) ===")
-    for tree in forest:
-        print_tree(tree, max_depth=6)
-
     print("=== Writing full structured tree to file ===")
-    with open("mathhub_tree_1.json", "w", encoding="utf-8") as f:
+    with open("mathhub_tree.json", "w", encoding="utf-8") as f:
         json.dump(forest, f, indent=2)
 
-    print("Wrote mathhub_tree_1.json")
-
+    print("Wrote mathhub_tree.json")
     print("main")
 
 if __name__ == "__main__":
