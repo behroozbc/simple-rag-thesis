@@ -1,4 +1,3 @@
-import time
 from dotenv import load_dotenv
 import os
 # from langchain_google_genai import GoogleGenerativeAIEmbeddings
@@ -9,13 +8,14 @@ from langchain.agents import create_agent
 from langchain_ollama import OllamaEmbeddings,ChatOllama
 from data import COURSE_URI, extract_html_titles, fetch_toc
 from search import TextSearch
+from readjsScore import lmsStatus,loadData
 # Load environment variables from .env file
 load_dotenv()
 GETDATA=False
 api_key=os.getenv("API_KEY")
 connection=os.getenv("ConnectionString")
 collection_name = os.getenv("collection_name")
-# embeddings = RateLimitedEmbeddings(model="models/gemini-embedding-001",google_api_key=api_key)
+lmpFileUri=os.getenv("lmpServerFile")
 embeddings = OllamaEmbeddings(
     model="mxbai-embed-large:latest",  # Replace with your pulled model
     base_url="http://localhost:11434",  # Default Ollama URL
@@ -34,7 +34,7 @@ vector_store = PGVector(
     connection=connection,
     use_jsonb=True,
 )
-
+lmpData=loadData(lmpFileUri)
 if GETDATA:
  files = set()
  toc_html = fetch_toc(COURSE_URI)
