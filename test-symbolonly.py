@@ -7,6 +7,7 @@ from langchain.agents.middleware import dynamic_prompt, ModelRequest
 from langchain.agents import create_agent
 from langchain_ollama import OllamaEmbeddings,ChatOllama
 from data import COURSE_URI, extract_html_titles, fetch_fragment, fetch_toc
+from query_data import fetch_all_symbols
 from search import TextSearch
 from readjsScore import lmsStatus,loadData
 import json
@@ -37,23 +38,7 @@ vector_store = PGVector(
     connection=connection,
     use_jsonb=True,
 )
-symbols=[] 
-def checkChild(parent):
-    for child in parent:
-        for key in list(child.keys()):
-            c=child[key]
-            symbols.extend(c["symbols"])
-            if c !=None:
-                checkChild(c["children"])
-with open("mathhub_tree.json","r") as file:
-    data=json.load(file) 
-
-for masterKey in data:
-    symbols.extend(masterKey[list(masterKey.keys())[0]]["symbols"])
-    checkChild(masterKey[list(masterKey.keys())[0]]["children"])
-    # for child in masterKey[list(masterKey.keys())[0]]["children"]:
-    #     for key in list(child.keys()):
-    #         symbols.extend(child[key]["symbols"])
+symbols=fetch_all_symbols()
 docs=[]        
 symbols= list(set(symbols))
 for i in tqdm(range(len(symbols))):

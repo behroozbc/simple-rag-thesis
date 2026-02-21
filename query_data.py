@@ -214,9 +214,11 @@ def fetch_document(uri):
     )
     resp.raise_for_status()
     return resp.json()
-
+def fetch_all_symbols():
+    return list(map(lambda x:x["x"]["value"],query_api({"query": "SELECT ?x WHERE { ?x rdf:type ulo:declaration .}"})))
 def main():
-    
+    print("=== All symbols count")
+    print(len(fetch_all_symbols()))
     print("=== Fetching SPARQL edges ===")
     edges = fetch_all_data_from_query_api()
     print(f"Total edges: {len(edges)}")
