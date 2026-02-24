@@ -139,88 +139,6 @@ def build_nodes_from_edges(edges):
         n.pop("_child_set", None)
     return nodes
 
-def build_graph(edges):
-    children = defaultdict(set)
-    parents = defaultdict(set)
-    nodes = set()
-
-    for p, c in edges:
-        children[p].add(c)
-        parents[c].add(p)
-        nodes.add(p)
-        nodes.add(c)
-
-    return children, parents, nodes
-
-############################################
-# Find root nodes (Main parents)
-############################################
-
-def find_roots(children, parents):
-    # roots = nodes that are parents but never children
-    roots = []
-    for p in children:
-        if p not in parents:
-            roots.append(p)
-    return roots
-
-
-############################################
-# Build recursive tree
-############################################
-
-def build_tree(node, children, visited):
-    if node in visited:
-        return {"uri": node, "cycle": True}
-
-    visited.add(node)
-    
-    # Fetch fragment for this node 
-    fragment = []
-    prerequisites = []
-    symbols = []
-    try: 
-        fragment = fetch_document(node) 
-    except Exception as e: 
-        print(str(e))
-
-    if fragment:
-        try:
-            prerequisites= fetch_document_prerequisites(node)
-        except Exception as ex:
-            print(str(ex))
-        
-        try:
-            symbols= fetch_document_reference_symbols(node)
-        except Exception as ex:
-            print(str(ex))
-
-        return {
-            node:{
-                "fragment": fragment,
-                "prerequisites": prerequisites,
-                "symbols": symbols,
-                "children": [
-                    build_tree(child, children, visited.copy())
-                    for child in sorted(children.get(node, []))
-                ]
-            }
-        }
-    
-
-############################################
-# Pretty print tree (for debugging)
-############################################
-
-def print_tree(tree, indent=0, max_depth=10):
-    if indent > max_depth:
-        print("  " * indent + "...")
-        return
-
-    print("  " * indent + tree["uri"])
-    for child in tree.get("children", []):
-        print_tree(child, indent + 1, max_depth)
-
 
 @lru_cache(maxsize=200_000)
 def fetch_document(uri):
@@ -243,7 +161,7 @@ def fetch_document(uri):
 def fetch_all_symbols():
     return list(map(lambda x:x["x"]["value"],query_api({"query": "SELECT ?x WHERE { ?x rdf:type ulo:declaration .}"})))
 
-def fetch_all_documents(nodes, max_workers=32, per_uri_workers=2):
+def fetch_all_documents(nodes, max_workers=32, per_uri_workers=32):
     """
     nodes: dict uri -> node
     Fetch content once per uri, in parallel.
@@ -291,7 +209,7 @@ def fetch_all_documents(nodes, max_workers=32, per_uri_workers=2):
             if i % 1000 == 0:
                 print(f"[docs] fetched {i}/{len(uris)}")
 
-    return nodes
+    return list(nodes.values())
 
 def main():
 
@@ -314,35 +232,6 @@ def main():
     exit()
     exit()
 
-
-
-
-    print("=== Building graph ===")
-    children, parents, nodes = build_graph(edges)
-
-
-    print("=== Finding root nodes ===")
-    roots = find_roots(children, parents)
-    print(f"Found {len(roots)} root nodes")
-
-    # Optional: focus on flams://archives as main root
-    main_roots = [r for r in roots if "flams://archives" in r]
-    if main_roots:
-        roots = main_roots
-        print("Using flams://archives as root")
-
-    print("=== Building trees ===")
-    forest = []
-    for r in roots:
-        tree = build_tree(r, children, set())
-        forest.append(tree)
-
-    print("=== Writing full structured tree to file ===")
-    with open("mathhub_tree.json", "w", encoding="utf-8") as f:
-        json.dump(forest, f, indent=2)
-
-    print("Wrote mathhub_tree.json")
-    print("main")
-
 if __name__ == "__main__":
     main()
+
