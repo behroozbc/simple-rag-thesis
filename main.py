@@ -10,31 +10,22 @@ from data import COURSE_URI, extract_html_titles, fetch_toc
 from query_data import fetch_document_reference_symbols
 from search import TextSearch
 from readjsScore import lmsStatus,loadData
+import config
 # Load environment variables from .env file
 load_dotenv()
 GETDATA=False
 api_key=os.getenv("API_KEY")
-connection=os.getenv("ConnectionString")
+dbPath=os.getenv("dbPath")
 collection_name = os.getenv("collection_name")
 lmpFileUri=os.getenv("lmpServerFile")
-embeddings = OllamaEmbeddings(
-    model="mxbai-embed-large:latest",  # Replace with your pulled model
-    base_url="http://localhost:11434",  # Default Ollama URL
-    # Optional: Advanced options
-    # show_alternate_urls: False,
-    # threads: 4,  # Number of threads for computation
-)
+
 model = ChatOllama(
     model="llama3.1:8b",
     temperature=0,
     # other params...
 )
-vector_store = PGVector(
-    embeddings=embeddings,
-    collection_name=collection_name,
-    connection=connection,
-    use_jsonb=True,
-)
+
+
 lmpData=loadData(lmpFileUri)
 if GETDATA:
  files = set()
@@ -47,7 +38,7 @@ if GETDATA:
      for idx, item in enumerate(uri_content_list)
  ]
  print(len(docs))
- vector_store.add_documents(docs, ids=[doc.metadata["id"] for doc in docs])
+ config.vector_store.add_documents(docs, ids=[doc.metadata["id"] for doc in docs])
  print("finished")
 
 
@@ -56,8 +47,8 @@ def prompt_with_context(request: ModelRequest) -> str:
     """Inject context into state messages."""
     last_query = request.state["messages"][-1].text
     text_searchResult= TextSearch(last_query,4)
-    retrieved_docs = vector_store.similarity_search(last_query)
-    symbols= [fetch_document_reference_symbols(doc.metadate["uri"]) for doc in retrieved_docs]
+    retrieved_docs =config.vector_store.similarity_search(last_query)
+    symbols= [fetch_document_reference_symbols(doc.metadata["uri"]) for doc in retrieved_docs]
     docs_content = "\n\n".join(doc.page_content for doc in retrieved_docs)
     vector_uri_contnet = [doc.metadata["uri"] for doc in retrieved_docs]
     
