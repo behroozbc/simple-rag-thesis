@@ -7,6 +7,7 @@ from langchain.agents.middleware import dynamic_prompt, ModelRequest
 from langchain.agents import create_agent
 from langchain_ollama import OllamaEmbeddings,ChatOllama
 from data import COURSE_URI, extract_html_titles, fetch_toc
+from query_data import fetch_document_reference_symbols
 from search import TextSearch
 from readjsScore import lmsStatus,loadData
 # Load environment variables from .env file
@@ -56,14 +57,15 @@ def prompt_with_context(request: ModelRequest) -> str:
     last_query = request.state["messages"][-1].text
     text_searchResult= TextSearch(last_query,4)
     retrieved_docs = vector_store.similarity_search(last_query)
-    
+    symbols= [fetch_document_reference_symbols(doc.metadate["uri"]) for doc in retrieved_docs]
     docs_content = "\n\n".join(doc.page_content for doc in retrieved_docs)
     vector_uri_contnet = [doc.metadata["uri"] for doc in retrieved_docs]
+    
     print(vector_uri_contnet)
-    for doc in text_searchResult:
-        if doc['uri'] not in vector_uri_contnet:
-            docs_content+= "\n\n"+doc['content']
-            print(doc['uri'])
+    # for doc in text_searchResult:
+    #     if doc['uri'] not in vector_uri_contnet:
+    #         docs_content+= "\n\n"+doc['content']
+    #         print(doc['uri'])
      
     system_message = (
         "Your response should mixed of this content:"
