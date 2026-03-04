@@ -7,9 +7,10 @@ from langchain.agents.middleware import dynamic_prompt, ModelRequest
 from langchain.agents import create_agent
 from langchain_ollama import OllamaEmbeddings,ChatOllama
 from data import COURSE_URI, extract_html_titles, fetch_toc
-from query_data import fetch_document_reference_symbols
+from query_fetch_data import fetch_document_reference_symbols
 from search import TextSearch
 from readjsScore import lmsStatus,loadData
+import json
 # Load environment variables from .env file
 load_dotenv()
 GETDATA=False
@@ -36,20 +37,6 @@ vector_store = PGVector(
     use_jsonb=True,
 )
 lmpData=loadData(lmpFileUri)
-if GETDATA:
- files = set()
- toc_html = fetch_toc(COURSE_URI)
- titles_with_html = []
- uri_content_list = []
- extract_html_titles(toc_html, titles_with_html, files, uri_content_list, COURSE_URI)
- docs = [
-     Document(page_content=item["content"], metadata={"id": idx,"uri":item["uri"]})
-     for idx, item in enumerate(uri_content_list)
- ]
- print(len(docs))
- vector_store.add_documents(docs, ids=[doc.metadata["id"] for doc in docs])
- print("finished")
-
 
 @dynamic_prompt
 def prompt_with_context(request: ModelRequest) -> str:
@@ -57,19 +44,27 @@ def prompt_with_context(request: ModelRequest) -> str:
     last_query = request.state["messages"][-1].text
     text_searchResult= TextSearch(last_query,4)
     retrieved_docs = vector_store.similarity_search(last_query)
-    symbols= [fetch_document_reference_symbols(doc.metadate["uri"]) for doc in retrieved_docs]
+    symbols=list()
+    for doc in retrieved_docs:
+        symbols.extend(fetch_document_reference_symbols(doc.metadata['uri']))
     docs_content = "\n\n".join(doc.page_content for doc in retrieved_docs)
     vector_uri_contnet = [doc.metadata["uri"] for doc in retrieved_docs]
-    
-    print(vector_uri_contnet)
     # for doc in text_searchResult:
     #     if doc['uri'] not in vector_uri_contnet:
     #         docs_content+= "\n\n"+doc['content']
     #         print(doc['uri'])
-     
+    symbols=list(map(lambda x: {"uri":x,"status":lmsStatus(x,lmpData)},symbols) )
+    lmStatus="\n\n".join(stat['uri']+json.dumps(stat["status"]) for stat in symbols)
     system_message = (
-        "Your response should mixed of this content:"
-        f"\n\n{docs_content}"
+        f"""
+        User query:
+        {last_query}
+        Your response should mixed of this content:
+        {docs_content}
+        the symboles have understanig level as:
+        {lmStatus}
+        """
+
     )
     return system_message
 
