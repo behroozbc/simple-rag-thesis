@@ -45,10 +45,10 @@ def prompt_with_context(request: ModelRequest) -> str:
         symbols.extend(fetch_document_reference_symbols(doc.metadata['uri']))
     docs_content = "\n\n".join(doc.page_content for doc in retrieved_docs)
     vector_uri_contnet = [doc.metadata["uri"] for doc in retrieved_docs]
-    # for doc in text_searchResult:
-    #     if doc['uri'] not in vector_uri_contnet:
-    #         docs_content+= "\n\n"+doc['content']
-    #         print(doc['uri'])
+    for doc in text_searchResult:
+        if doc['uri'] not in vector_uri_contnet:
+            docs_content+= "\n\n"+doc['content']
+            symbols.extend(fetch_document_reference_symbols(doc['uri']))
     symbols=list(map(lambda x: {"uri":x,"status":lmsStatus(x,lmpData)},symbols) )
     lmStatus="\n\n".join(stat['uri']+json.dumps(stat["status"]) for stat in symbols)
     system_message = (
