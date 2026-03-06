@@ -5,16 +5,16 @@ from langchain_postgres import PGVector
 from langchain_core.documents import Document
 from langchain.agents.middleware import dynamic_prompt, ModelRequest
 from langchain.agents import create_agent
-from langchain_ollama import OllamaEmbeddings,ChatOllama
+from langchain_ollama import OllamaEmbeddings
 from data import COURSE_URI, extract_html_titles, fetch_toc
 from query_fetch_data import fetch_document_reference_symbols
 from search import TextSearch
 from readjsScore import lmsStatus,loadData
 import json
+from model import model
 # Load environment variables from .env file
 load_dotenv()
 GETDATA=False
-api_key=os.getenv("API_KEY")
 connection=os.getenv("ConnectionString")
 collection_name = os.getenv("collection_name")
 lmpFileUri=os.getenv("lmpServerFile")
@@ -25,11 +25,7 @@ embeddings = OllamaEmbeddings(
     # show_alternate_urls: False,
     # threads: 4,  # Number of threads for computation
 )
-model = ChatOllama(
-    model="llama3.1:8b",
-    temperature=0,
-    # other params...
-)
+
 vector_store = PGVector(
     embeddings=embeddings,
     collection_name=collection_name,
