@@ -78,6 +78,7 @@ def fetch_document_reference_symbols(document):
 # Fetch document prerequisites
 #############################################
 def fetch_document_prerequisites(document):
+     document = document.replace(" ","%20")
      query = f"""
         SELECT DISTINCT ?s WHERE {{
             <{document}> (ulo:contains|dc:hasPart)* ?p.
