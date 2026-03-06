@@ -5,62 +5,62 @@ from langchain_postgres import PGVector
 from langchain_core.documents import Document
 from langchain.agents.middleware import dynamic_prompt, ModelRequest
 from langchain.agents import create_agent
-from langchain_ollama import OllamaEmbeddings,ChatOllama
+from langchain_ollama import OllamaEmbeddings
 from data import COURSE_URI, extract_html_titles, fetch_toc
-from query_data import fetch_document_reference_symbols
+from query_fetch_data import fetch_document_reference_symbols
 from search import TextSearch
 from readjsScore import lmsStatus,loadData
-import config
+import json
+from model import model
 # Load environment variables from .env file
 load_dotenv()
 GETDATA=False
-api_key=os.getenv("API_KEY")
-dbPath=os.getenv("dbPath")
+connection=os.getenv("ConnectionString")
 collection_name = os.getenv("collection_name")
 lmpFileUri=os.getenv("lmpServerFile")
-
-model = ChatOllama(
-    model="llama3.1:8b",
-    temperature=0,
-    # other params...
+embeddings = OllamaEmbeddings(
+    model="mxbai-embed-large:latest",  # Replace with your pulled model
+    base_url="http://localhost:11434",  # Default Ollama URL
+    # Optional: Advanced options
+    # show_alternate_urls: False,
+    # threads: 4,  # Number of threads for computation
 )
 
-
+vector_store = PGVector(
+    embeddings=embeddings,
+    collection_name=collection_name,
+    connection=connection,
+    use_jsonb=True,
+)
 lmpData=loadData(lmpFileUri)
-if GETDATA:
- files = set()
- toc_html = fetch_toc(COURSE_URI)
- titles_with_html = []
- uri_content_list = []
- extract_html_titles(toc_html, titles_with_html, files, uri_content_list, COURSE_URI)
- docs = [
-     Document(page_content=item["content"], metadata={"id": idx,"uri":item["uri"]})
-     for idx, item in enumerate(uri_content_list)
- ]
- print(len(docs))
- config.vector_store.add_documents(docs, ids=[doc.metadata["id"] for doc in docs])
- print("finished")
-
 
 @dynamic_prompt
 def prompt_with_context(request: ModelRequest) -> str:
     """Inject context into state messages."""
     last_query = request.state["messages"][-1].text
     text_searchResult= TextSearch(last_query,4)
-    retrieved_docs =config.vector_store.similarity_search(last_query)
-    symbols= [fetch_document_reference_symbols(doc.metadata["uri"]) for doc in retrieved_docs]
+    retrieved_docs = vector_store.similarity_search(last_query)
+    symbols=list()
+    for doc in retrieved_docs:
+        symbols.extend(fetch_document_reference_symbols(doc.metadata['uri']))
     docs_content = "\n\n".join(doc.page_content for doc in retrieved_docs)
     vector_uri_contnet = [doc.metadata["uri"] for doc in retrieved_docs]
-    
-    print(vector_uri_contnet)
     # for doc in text_searchResult:
     #     if doc['uri'] not in vector_uri_contnet:
     #         docs_content+= "\n\n"+doc['content']
     #         print(doc['uri'])
-     
+    symbols=list(map(lambda x: {"uri":x,"status":lmsStatus(x,lmpData)},symbols) )
+    lmStatus="\n\n".join(stat['uri']+json.dumps(stat["status"]) for stat in symbols)
     system_message = (
-        "Your response should mixed of this content:"
-        f"\n\n{docs_content}"
+        f"""
+        User query:
+        {last_query}
+        Your response should mixed of this content:
+        {docs_content}
+        the symboles have understanig level as:
+        {lmStatus}
+        """
+
     )
     return system_message
 

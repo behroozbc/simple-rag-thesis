@@ -64,6 +64,7 @@ def fetch_document_symbols(document):
 # Fetch document reference symbols
 #############################################
 def fetch_document_reference_symbols(document):
+     document = document.replace(" ","%20")
      query = f"""
         SELECT DISTINCT ?s WHERE {{
             <{document}> (ulo:contains|dc:hasPart)* ?p.
