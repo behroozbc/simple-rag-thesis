@@ -7,7 +7,7 @@ from langchain.agents.middleware import dynamic_prompt, ModelRequest
 from langchain.agents import create_agent
 from langchain_ollama import OllamaEmbeddings
 from data import COURSE_URI, extract_html_titles, fetch_toc
-from query_fetch_data import fetch_document_reference_symbols
+from query_fetch_data import fetch_document_prerequisites, fetch_document_reference_symbols
 from search import TextSearch
 from readjsScore import lmsStatus,loadData
 import json
@@ -38,17 +38,21 @@ lmpData=loadData(lmpFileUri)
 def prompt_with_context(request: ModelRequest) -> str:
     """Inject context into state messages."""
     last_query = request.state["messages"][-1].text
+    symbols=list()
+    returnedUri=list()
+    prerequisites=list()
     text_searchResult= TextSearch(last_query,4)
     retrieved_docs = vector_store.similarity_search(last_query)
-    symbols=list()
-    for doc in retrieved_docs:
-        symbols.extend(fetch_document_reference_symbols(doc.metadata['uri']))
+    returnedUri.extend(map(lambda x: x['uri'],text_searchResult))
+    returnedUri.extend(map(lambda x: x.metadata['uri'],retrieved_docs))
+    for uri in returnedUri:
+        symbols.extend(fetch_document_reference_symbols(uri))
+        prerequisites.extend(fetch_document_prerequisites(uri))
     docs_content = "\n\n".join(doc.page_content for doc in retrieved_docs)
     vector_uri_contnet = [doc.metadata["uri"] for doc in retrieved_docs]
-    # for doc in text_searchResult:
-    #     if doc['uri'] not in vector_uri_contnet:
-    #         docs_content+= "\n\n"+doc['content']
-    #         print(doc['uri'])
+    for doc in text_searchResult:
+        if doc['uri'] not in vector_uri_contnet:
+            docs_content+= "\n\n"+doc['content']
     symbols=list(map(lambda x: {"uri":x,"status":lmsStatus(x,lmpData)},symbols) )
     lmStatus="\n\n".join(stat['uri']+json.dumps(stat["status"]) for stat in symbols)
     system_message = (
