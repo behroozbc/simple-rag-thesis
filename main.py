@@ -41,7 +41,8 @@ def prompt_with_context(request: ModelRequest) -> str:
     symbols=list()
     returnedUri=list()
     prerequisites=list()
-    text_searchResult= TextSearch(last_query,4)
+    keywords= model.invoke([{"role": "user", "content": f"Give only the key word of this query not any other texts: {last_query}"}]).content
+    text_searchResult= TextSearch(keywords,4)
     retrieved_docs = vector_store.similarity_search(last_query)
     returnedUri.extend(map(lambda x: x['uri'],text_searchResult))
     returnedUri.extend(map(lambda x: x.metadata['uri'],retrieved_docs))
