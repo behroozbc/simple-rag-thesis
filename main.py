@@ -7,7 +7,7 @@ from langchain.agents.middleware import dynamic_prompt, ModelRequest
 from langchain.agents import create_agent
 from langchain_ollama import OllamaEmbeddings
 from data import COURSE_URI, extract_html_titles, fetch_toc
-from query_fetch_data import fetch_document_prerequisites, fetch_document_reference_symbols
+from query_fetch_data import fetch_document, fetch_document_prerequisites, fetch_document_reference_symbols
 from search import TextSearch
 from readjsScore import lmsStatus,loadData
 import json
@@ -55,21 +55,33 @@ def prompt_with_context(request: ModelRequest) -> str:
         if doc['uri'] not in vector_uri_contnet:
             docs_content+= "\n\n"+doc['content']
     symbols=list(map(lambda x: {"uri":x,"status":lmsStatus(x,lmpData)},symbols) )
+    prerequisites=[{
+        "uri": x,
+        "status": lmsStatus(x, lmpData),
+        "fregment": frag                    # note: probably typo → should be "fragment"
+    }
+    for x in prerequisites
+    if (result := fetch_document(x)) is not None
+    for frag in [result[2]]  ]
     lmStatus="\n\n".join(stat['uri']+json.dumps(stat["status"]) for stat in symbols)
+    prerequisitesStatus="\n\n".join(pre['uri']+json.dumps(pre['status'])+pre["fregment"] for pre in prerequisites)
     system_message = (
         f"""
         User query:
         {last_query}
         Your response should mixed of this content:
         {docs_content}
-        the symboles have understanig level as:
+        the symboles have understanig level as if the user does not know it please explain to it and if the user know skip it:
         {lmStatus}
+        this is prerequisites status and content, if the user does not know it please add the content, if the user know skip it:
+        {prerequisitesStatus} 
         """
 
     )
     return system_message
 
 agent = create_agent(model, tools=[], middleware=[prompt_with_context])
+
 query = "What is ai agents?"
 for step in agent.stream(
     {"messages": [{"role": "user", "content": query}]},
