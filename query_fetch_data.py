@@ -3,11 +3,84 @@ import json
 from collections import defaultdict, OrderedDict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
-
-
+from bs4 import BeautifulSoup
+import re
 
 
 FLAMS_BASE = "https://mathhub.info"
+
+#############################################
+# HTML → Clean text (strip at fetch time)
+#############################################
+NOISE_CLASSES = {
+    "rustex-vskip", "rustex-hskip", "rustex-box-vv", "rustex-box-vhc",
+    "rustex-box-after-v", "rustex-scalewidth", "rustex-box-vh",
+    "rustex-box-hh", "rustex-vbox-to",
+}
+ 
+def clean_html_to_text(html: str) -> dict:
+    """
+    Extract only semantic content from rustex HTML.
+    Returns a dict with 'term', 'definition', and 'text' keys.
+    """
+    if not html or not isinstance(html, str):
+        return None
+ 
+    soup = BeautifulSoup(html, "html.parser")
+ 
+    # 1. Remove layout/noise divs by class
+    for tag in soup.find_all(True):
+        classes = tag.get("class", [])
+        if any(c in NOISE_CLASSES for c in classes):
+            tag.decompose()
+ 
+    # 2. Remove all display:none elements (counter spans, style spans)
+    for tag in soup.find_all(style=lambda s: s and "display:none" in s):
+        tag.decompose()
+ 
+    # 3. Remove <a> anchors that are just page markers (id only, no text)
+    for tag in soup.find_all("a", id=True):
+        if not tag.get_text(strip=True):
+            tag.decompose()
+ 
+    # 4. Extract the defined term
+    definiendum = soup.find(attrs={"data-ftml-definiendum": True})
+    term = definiendum.get_text(strip=True) if definiendum else ""
+ 
+    # 5. Extract definition body
+    definition_div = soup.find(attrs={"data-ftml-definition": True})
+    definition_text = definition_div.get_text(separator=" ", strip=True) if definition_div else ""
+ 
+    # 6. Fallback: get all remaining text if no semantic tags found
+    if not definition_text:
+        definition_text = soup.get_text(separator=" ", strip=True)
+ 
+    # 7. Clean up artifacts: "ist . . ." means content is incomplete
+    definition_text = re.sub(r"\s*\.\s*\.\s*\.\s*", " [incomplete] ", definition_text).strip()
+    definition_text = re.sub(r"\s{2,}", " ", definition_text)
+ 
+    if not term and not definition_text:
+        return None
+ 
+    return {
+        "term": term,
+        "text": f"Term: {term}\n{definition_text}".strip() if term else definition_text,
+    }
+ 
+ 
+def parse_content_field(raw_content):
+    """
+    Your content array: [uri, [links], html_string]
+    Cleans HTML and returns only text. Returns None if nothing useful.
+    """
+    if not raw_content or not isinstance(raw_content, list) or len(raw_content) < 3:
+        return None
+ 
+    html = raw_content[2]
+    if not isinstance(html, str):
+        return None
+ 
+    return clean_html_to_text(html)
 
 #############################################
 # Helper function to query the FLAMS SPARQL endpoint
@@ -51,6 +124,7 @@ def fetch_doc_other_values(sparl_query):
 # Fetch document reference symbols
 #############################################
 def fetch_document_symbols(document):
+     document = document.replace(" ","%20")
      query = f"""
         SELECT DISTINCT ?s WHERE {{
             <{document}> (ulo:contains|dc:hasPart)* ?p.
@@ -130,7 +204,7 @@ def build_nodes_from_edges(edges):
     nodes = OrderedDict()
     for p, c in edges:
         if p not in nodes:
-            nodes[p] = {"uri": p, "content": None, "symbols": [], "prerequisites": [], "children": [], "_child_set": set()}
+            nodes[p] = {"uri": p,"content": None, "symbols": [], "prerequisites": [], "children": [], "_child_set": set()}
         if c not in nodes:
             nodes[c] = {"uri": c, "content": None, "symbols": [], "prerequisites": [], "children": [], "_child_set": set()}
         if c not in nodes[p]["_child_set"]:
@@ -183,14 +257,23 @@ def fetch_all_documents(nodes, max_workers=32, per_uri_workers=32):
             return []
 
     def work(uri):
-        try:
-            content = fetch_document(uri)
-        except Exception:
-            content = None
 
-        # If content missing, skip the other two calls
-        if not content:
+        raw = fetch_document(uri)
+        if not raw:
             return uri, None, [], []
+ 
+        # ---- Clean HTML at fetch time, never store raw HTML ----
+        cleaned = parse_content_field(raw)
+        content = cleaned["text"] if cleaned else None
+
+        # try:
+        #     content = fetch_document(uri)
+        # except Exception:
+        #     content = None
+
+        # # If content missing, skip the other two calls
+        # if not content:
+        #     return uri, None, [], []
         
        # 2) symbols & prereqs in parallel (so they don't add sequential latency)
         with ThreadPoolExecutor(max_workers=per_uri_workers) as ex2:
@@ -236,4 +319,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
