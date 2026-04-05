@@ -289,8 +289,8 @@ def fetch_all_documents(nodes, max_workers=32, per_uri_workers=32):
     with ThreadPoolExecutor(max_workers=max_workers) as ex:
         futures = [ex.submit(work, uri) for uri in uris]
         for i, fut in enumerate(as_completed(futures), 1):
+            uri, content, symbols, prereqs = fut.result()
             if uri:
-                uri, content, symbols, prereqs = fut.result()
                 nodes[uri]["content"] = content
                 nodes[uri]["symbols"] = symbols if symbols is not None else []
                 nodes[uri]["prerequisites"] = prereqs if prereqs is not None else []
