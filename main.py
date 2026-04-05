@@ -12,26 +12,15 @@ from search import TextSearch
 from readjsScore import lmsStatus,loadData
 import json
 from model import model
+from config import vector_store
 # Load environment variables from .env file
 load_dotenv()
 GETDATA=False
 connection=os.getenv("ConnectionString")
 collection_name = os.getenv("collection_name")
 lmpFileUri=os.getenv("lmpServerFile")
-embeddings = OllamaEmbeddings(
-    model="mxbai-embed-large:latest",  # Replace with your pulled model
-    base_url="http://localhost:11434",  # Default Ollama URL
-    # Optional: Advanced options
-    # show_alternate_urls: False,
-    # threads: 4,  # Number of threads for computation
-)
 
-vector_store = PGVector(
-    embeddings=embeddings,
-    collection_name=collection_name,
-    connection=connection,
-    use_jsonb=True,
-)
+
 lmpData=loadData(lmpFileUri)
 
 @dynamic_prompt
