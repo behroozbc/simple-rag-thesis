@@ -214,4 +214,4 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
-chroma_langchain_db/
+.chroma_langchain_db/
