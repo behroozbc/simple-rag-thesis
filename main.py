@@ -60,7 +60,7 @@ def prompt_with_context(request: ModelRequest) -> str:
         {last_query}
         Your response should mixed of this content:
         {docs_content}
-        the symboles have understanig level as if the user does not know it please explain to it and if the user know skip it:
+        the symbols have understating level as if the user does not know it please explain to it and if the user know skip it:
         {lmStatus}
         this is prerequisites status and content, if the user does not know it please add the content, if the user know skip it:
         {prerequisitesStatus} 
