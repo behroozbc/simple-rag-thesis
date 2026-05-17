@@ -15,8 +15,7 @@ Solution: An environment is dynamic if it can change without the agent taking an
 
 ### Briefly explain the difference between fully and partially observable environments. Give an example for the latter.
 
-Solution: An environment is fully observable if the agent knows the complete state of the environment, otherwise partially observable. An example is an agent playing a game with hidden
-information, such as poker.
+Solution: An environment is fully observable if the agent knows the complete state of the environment, otherwise partially observable. An example is an agent playing a game with hidden information, such as poker.
 
 ### Explain briefly the difference between Strong AI and Weak AI?
 
@@ -66,3 +65,16 @@ information, such as poker.
 
 ### Can we replace ⊨ with ⊢ in a logic formula?
 
+### Right now every where use deep leaning methods but AI -1 show us old methods of AI with no body use it right now, so why we need to study AI-1?
+
+### My logic formula is sound, so is it complete?
+
+### My logic formula is complete, so is it sound?
+
+### what is sound in logic formula?
+
+### what is complete in logic formula?
+
+### how can check my logic formula is sound?
+
+### how can check my logic formula is complete?
