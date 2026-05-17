@@ -64,3 +64,5 @@ information, such as poker.
 
 ### Are these two symbol ⇔ and ⇒ are the same?
 
+### Can we replace ⊨ with ⊢ in a logic formula?
+
