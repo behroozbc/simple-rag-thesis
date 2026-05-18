@@ -19,8 +19,7 @@ GETDATA=False
 connection=os.getenv("ConnectionString")
 collection_name = os.getenv("collection_name")
 lmpFileUri=os.getenv("lmpServerFile")
-
-
+questions = json.load(open(os.getenv("questions"), "r"))
 lmpData=loadData(lmpFileUri)
 
 @dynamic_prompt
@@ -66,15 +65,16 @@ def prompt_with_context(request: ModelRequest) -> str:
         this is prerequisites status and content, if the user does not know it please add the content, if the user know skip it:
         {prerequisitesStatus} 
         """
-
     )
     return system_message
-
 agent = create_agent(model, tools=[], middleware=[prompt_with_context])
-
-query = "What is ai agents?"
-for step in agent.stream(
-    {"messages": [{"role": "user", "content": query}]},
+for question in questions[0]['Headers']:
+    print(question["Title"])
+    query = question["Title"]
+    for step in agent.stream(
+        {"messages": [{"role": "user", "content": query}]},
     stream_mode="values",
-):
-    step["messages"][-1].pretty_print()
+    ):
+        step["messages"][-1].pretty_print()
+
+
