@@ -56,6 +56,7 @@ def prompt_with_context(request: ModelRequest) -> str:
     prerequisitesStatus="\n\n".join(pre['uri']+json.dumps(pre['status'])+pre["fregment"] for pre in prerequisites)
     system_message = (
         f"""
+        Answer on Academic tone.
         User query:
         {last_query}
         Your response should mixed of this content:
