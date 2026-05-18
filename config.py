@@ -5,8 +5,9 @@ from langchain_ollama import OllamaEmbeddings
 load_dotenv()
 collection_name = os.getenv("collection_name")
 dbPath=os.getenv("dbPath")
+embeddingModelName=os.getenv("embeddingModelName")
 embeddings = OllamaEmbeddings(
-    model="mxbai-embed-large:latest",  # Replace with your pulled model
+    model=embeddingModelName,  # Replace with your pulled model
     base_url="http://localhost:11434",  # Default Ollama URL
     # Optional: Advanced options
     # show_alternate_urls: False,
