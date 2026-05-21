@@ -14,11 +14,6 @@ connection=os.getenv("ConnectionString")
 collection_name = os.getenv("collection_name")
 lmpFileUri=os.getenv("lmpServerFile")
 
-model = ChatOllama(
-    model="llama3.1:8b",
-    temperature=0,
-    # other params...
-)
 with open("./course_full.json","r") as file:
     data=json.load(file)    
 data=list(filter(lambda x:x["content"]!=None,list( data)))
