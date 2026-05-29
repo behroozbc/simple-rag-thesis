@@ -11,7 +11,6 @@ dbPath=os.getenv("dbPath")
 embeddingModelName=os.getenv("embeddingModelName")
 match os.getenv("modelProvider"):
     case 'fau':
-        print('fau')
         embeddings = OpenAIEmbeddings(base_url="https://hub.nhr.fau.de/api/llmgw/v1",api_key=os.getenv('fauKey'),model=embeddingModelName)
     case 'huggingface':
         embeddings= HuggingFaceEmbeddings(embeddingModelName)
