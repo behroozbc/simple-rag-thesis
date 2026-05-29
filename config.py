@@ -3,19 +3,23 @@ import os
 from dotenv import load_dotenv
 from langchain_ollama import OllamaEmbeddings
 from langchain_huggingface import HuggingFaceEmbeddings
-embeddings = HuggingFaceEmbeddings(model_name="Qwen/Qwen3-VL-Embedding-2B",cache_folder= "./.emb-models",model_kwargs={"device": "cuda"})
-
+from langchain_openai import OpenAIEmbeddings
 load_dotenv()
 collection_name = os.getenv("collection_name")
 dbPath=os.getenv("dbPath")
+
 embeddingModelName=os.getenv("embeddingModelName")
-# embeddings = OllamaEmbeddings(
-#     model=embeddingModelName,  # Replace with your pulled model
-#     base_url="http://localhost:11434",  # Default Ollama URL
-#     # Optional: Advanced options
-#     # show_alternate_urls: False,
-#     # threads: 4,  # Number of threads for computation
-# )
+match os.getenv("modelProvider"):
+    case 'fau':
+        print('fau')
+        embeddings = OpenAIEmbeddings(base_url="https://hub.nhr.fau.de/api/llmgw/v1",api_key=os.getenv('fauKey'),model=embeddingModelName)
+    case 'huggingface':
+        embeddings= HuggingFaceEmbeddings(embeddingModelName)
+    case 'ollama':
+        embeddings = OllamaEmbeddings(
+        model=embeddingModelName)
+    case _:
+        embeddings=None
 vector_store = Chroma(
     collection_name=collection_name,
     embedding_function=embeddings,
