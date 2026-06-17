@@ -102,7 +102,7 @@ pybase64==1.4.3
 pydantic==2.12.4
 pydantic-settings==2.13.1
 pydantic_core==2.41.5
-Pygments==2.19.2
+Pygments==2.20.0
 PyPika==0.51.1
 pyproject_hooks==1.2.0
 pyreadline3==3.5.4
