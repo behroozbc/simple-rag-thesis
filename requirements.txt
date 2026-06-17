@@ -92,7 +92,7 @@ posthog==5.4.0
 pqdm==0.2.0
 propcache==0.4.1
 proto-plus==1.26.1
-protobuf==6.33.1
+protobuf==6.33.5
 psycopg==3.2.12
 psycopg-binary==3.2.12
 psycopg-pool==3.2.7
