@@ -3,7 +3,6 @@ import os
 from langchain_core.documents import Document
 from langchain.agents.middleware import dynamic_prompt, ModelRequest
 from langchain.agents import create_agent
-from data import COURSE_URI, extract_html_titles, fetch_toc
 from query_fetch_data import fetch_document, fetch_document_prerequisites, fetch_document_reference_symbols
 from search import TextSearch
 from readjsScore import lmsStatus,loadData
