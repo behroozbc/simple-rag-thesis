@@ -5,11 +5,17 @@ from langchain.agents.middleware import dynamic_prompt, ModelRequest
 from langchain.agents import create_agent
 from query_fetch_data import fetch_document, fetch_document_prerequisites, fetch_document_reference_symbols
 from search import TextSearch
-from readjsScore import getLmpsStatus, lmpStatus
+from readjsScore import LmpUser, getLmpsStatus
 import json
 from model import model
 from config import vector_store
 # Load environment variables from .env file
+from langchain.agents import AgentState, create_agent
+from typing import TypedDict, Any
+
+class CustomAgentState(AgentState):
+    current_user: LmpUser  # or better: LmpUser if you can import the type
+    # You can add other fields too
 load_dotenv()
 GETDATA=False
 connection=os.getenv("ConnectionString")
@@ -21,6 +27,7 @@ Lmpsdata= getLmpsStatus('./lmps')
 @dynamic_prompt
 def prompt_with_context(request: ModelRequest) -> str:
     """Inject context into state messages."""
+    current_user:LmpUser = request.state["current_user"]
     last_query = request.state["messages"][-1].text
     symbols=list()
     returnedUri=list()
@@ -38,10 +45,10 @@ def prompt_with_context(request: ModelRequest) -> str:
     for doc in text_searchResult:
         if doc['uri'] not in vector_uri_contnet:
             docs_content+= "\n\n"+doc['content']
-    symbols=list(map(lambda x: {"uri":x,"status":lmpStatus(x,lmpData)},symbols) )
+    symbols=list(map(lambda x: {"uri":x,"status":current_user.lmpStatus(x)},symbols) )
     prerequisites=[{
         "uri": x,
-        "status": lmpStatus(x, lmpData),
+        "status":  current_user.lmpStatus(x),
         "fregment": frag                    # note: probably typo → should be "fragment"
     }
     for x in prerequisites
@@ -65,15 +72,16 @@ def prompt_with_context(request: ModelRequest) -> str:
         """
     )
     return system_message
-agent = create_agent(model, tools=[], middleware=[prompt_with_context])
+agent = create_agent(model, tools=[], middleware=[prompt_with_context],state_schema=CustomAgentState)
 for question in questions[0]['Headers']:
     for lp in Lmpsdata:
         # try:
-            lmpData=lp
             query = question["Title"]
             for step in agent.stream(
-                {"messages": [{"role": "user", "content": query}]},
-            stream_mode="values",):
+                {
+                "messages": [{"role": "user", "content": query}],
+                "current_user": lp   # ← Important!
+            },stream_mode="values"):
                 step["messages"][-1].pretty_print()
         # except:
         #     print("MODELPROBLEM")
