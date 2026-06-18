@@ -43,13 +43,17 @@ Solution: An environment is fully observable if the agent knows the complete sta
 
 ### Why we need to learn AI 1?
 
-### does AI -1 topics too old?
+### does AI-1 topics too old?
 
 ### Is this assignment meant to be graded?
 
 ### what is ⊨ mean?
 
+### what is the name of ⊨?
+
 ### what is ⇔ mean?
+
+### what is the name of ⇔?
 
 ### Are these two symbol ⊨ and ⊢ are the same? 
 
@@ -65,11 +69,19 @@ Solution: An environment is fully observable if the agent knows the complete sta
 
 ### Can we replace ⊨ with ⊢ in a logic formula?
 
-### Right now every where use deep leaning methods but AI -1 show us old methods of AI with no body use it right now, so why we need to study AI-1?
+### Right now every where use deep leaning methods but AI-1 show us old methods of AI with no body use it right now, so why we need to study AI-1?
 
 ### My logic formula is sound, so is it complete?
 
+### My logic formula is sound, so is it Completeness?
+
+### My logic formula is soundness, so is it complete?
+
 ### My logic formula is complete, so is it sound?
+
+### My logic formula is complete, so is it soundness?
+
+### My logic formula is Completeness, so is it sound?
 
 ### what is sound in logic formula?
 
@@ -77,4 +89,18 @@ Solution: An environment is fully observable if the agent knows the complete sta
 
 ### how can check my logic formula is sound?
 
+### how can check my logic formula is soundness?
+
 ### how can check my logic formula is complete?
+
+### how can check my logic formula is Completeness?
+
+### what is soundness?
+
+### what is completeness?
+
+### Is robin has_part legs?
+
+### what robin?
+
+### So jack has a robin?

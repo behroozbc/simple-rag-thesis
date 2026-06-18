@@ -2,7 +2,6 @@ from dotenv import load_dotenv
 import os
 # from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_core.documents import Document
-from langchain_ollama import OllamaEmbeddings,ChatOllama
 import json
 from tqdm import tqdm
 import config
@@ -14,22 +13,30 @@ connection=os.getenv("ConnectionString")
 collection_name = os.getenv("collection_name")
 lmpFileUri=os.getenv("lmpServerFile")
 
-model = ChatOllama(
-    model="llama3.1:8b",
-    temperature=0,
-    # other params...
-)
 with open("./course_full.json","r") as file:
     data=json.load(file)    
 data=list(filter(lambda x:x["content"]!=None,list( data)))
-docs=[]
-for i in tqdm(range(len(data))):
-    item=data[i]
-    content= item["content"][0]
-    docs.append(Document(page_content=content,metadata={"id":str(i+1),"uri":item['uri']}))
+batch_size = 5000
+docs = []                         # لیست نهایی اسناد
+
+# حلقهٔ خارجی: پیمایش batch‑ها
+for start in tqdm(range(0, len(data), batch_size), desc="Batches"):
+    end = min(start + batch_size, len(data))   # اطمینان از خروجی صحیح در آخرین batch
+    batch = data[start:end]                    # یک batch از 0 تا 5000 آیتم
+
+    # حلقهٔ داخلی: پردازش هر آیتم داخل batch
+    for i, item in enumerate(batch, start=start):
+        # فرض می‌کنیم `item["content"]` لیستی است و می‌خواهیم اولین مقدارش
+        content = item["content"][0]
+
+        # ساختن Document و افزودن به لیست نهایی
+        docs.append(
+            Document(
+                page_content=content,
+                metadata={"id": str(i + 1), "uri": item["uri"]}   # i+1 تا شماره‌گذاری کلی حفظ شود
+            )
+        )
         
     config.vector_store.add_documents(docs, ids=[doc.metadata["id"] for doc in docs])
     
     docs=[]
-    
-    
