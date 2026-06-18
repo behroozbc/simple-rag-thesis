@@ -1,6 +1,5 @@
 from dotenv import load_dotenv
 import os
-# from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_core.documents import Document
 import json
 from tqdm import tqdm
