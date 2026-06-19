@@ -68,15 +68,15 @@ def prompt_with_context(request: ModelRequest) -> str:
     return system_message
 agent = create_agent(model, tools=[], middleware=[prompt_with_context])
 for question in questions[0]['Headers']:
+    query = question["Title"]
     for lp in Lmpsdata:
-        # try:
-            lmpData=lp
-            query = question["Title"]
+        try:
+            lmpData=lp            
             for step in agent.stream(
                 {"messages": [{"role": "user", "content": query}]},
             stream_mode="values",):
                 step["messages"][-1].pretty_print()
-        # except:
-        #     print("MODELPROBLEM")
+        except:
+            print("MODELPROBLEM")
 
 
