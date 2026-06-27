@@ -218,3 +218,4 @@ __marimo__/
 .lms.json
 /.emb-models
 /lmps
+/.deepeval
